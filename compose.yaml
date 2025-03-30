@@ -1,0 +1,29 @@
+﻿services:
+  backend:
+    image: backend
+    container_name: wordle-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - 8080:8080
+      - 8081:8081
+    networks:
+      - app
+  
+  frontend:
+    image: frontend
+    container_name: wordle-frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - 5173:5173
+    volumes:
+      - ./frontend:/app
+    networks:
+      - app
+  
+networks:
+  app:
+    driver: bridge

@@ -1,0 +1,21 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "backend", "backend\backend.csproj", "{F4858AF6-CF11-4767-A2A0-D36BB4AFCD85}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4F4B2910-DFBB-47BE-A466-B7F83F55BCED}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F4858AF6-CF11-4767-A2A0-D36BB4AFCD85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4858AF6-CF11-4767-A2A0-D36BB4AFCD85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4858AF6-CF11-4767-A2A0-D36BB4AFCD85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4858AF6-CF11-4767-A2A0-D36BB4AFCD85}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
