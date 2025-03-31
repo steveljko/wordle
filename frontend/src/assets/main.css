@@ -9,3 +9,55 @@
 body {
   font-family: sans-serif;
 }
+
+label {
+  font-size: 14px;
+  letter-spacing: .05rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  display: block;
+  margin-bottom: .5rem;
+}
+
+input {
+  padding: .5rem .65rem;
+  border: 1px solid #DDD;
+  border-radius: .25rem;
+  font-size: 1rem;
+  line-height: 1rem;
+}
+
+button {
+  padding: .5rem .65rem;
+  border-radius: .25rem;
+  font-size: 15px;
+  line-height: 1rem;
+  background-color: #3C73A8;
+  color: white;
+  cursor: pointer;
+}
+
+section#login {
+  width: 33rem;
+  padding: .75rem;
+  border: 1px solid #DDD;
+  border-radius: .25rem;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+section#login input,
+section#login button {
+  width: 100%;
+  display: block;
+}
+
+section#login input {
+  margin-bottom: .5rem;
+}
+
+span#validation-message {
+  display: block;
+  color: #cf000f;
+}
