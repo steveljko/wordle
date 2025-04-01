@@ -3,15 +3,15 @@ using backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
         builder =>
         {
-            builder
-                .WithOrigins("http://localhost:5173")
-                .AllowAnyHeader()
+            builder.WithOrigins("http://localhost:5173")
                 .AllowAnyMethod()
+                .AllowAnyHeader()
                 .AllowCredentials();
         });
 });
@@ -23,6 +23,7 @@ builder.Services.AddSingleton<LobbyService>();
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+app.UseRouting();
 app.UseCors();
 
 app.MapControllers();

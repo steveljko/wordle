@@ -1,7 +1,9 @@
 <script setup>
 import GameService from '@/services/game';
 import { ref, reactive } from 'vue';
-import * as signalR from "@microsoft/signalr";
+import * as signalR from '@microsoft/signalr';
+
+import 'vue3-toastify/dist/index.css';
 
 const game = reactive({
   scene: 'login',
@@ -9,30 +11,36 @@ const game = reactive({
 });
 
 const username = ref('');
-const message = ref('');
 
 const conn = new signalR.HubConnectionBuilder()
-    .withUrl('http://localhost:8080/game', { withCredentials: false })
+    .withUrl('http://localhost:8080/game', { withCredentials: true })
     .withAutomaticReconnect()
     .build();
 
 const gameService = new GameService(conn);
-
-conn.start()
-    .then(() => console.log('connected'))
-    .catch((err) => console.error('SignalR connection error:', err));
 
 conn.on('UserJoined', (data) => {
   game.playersInLobby = data.players;
 });
 
 conn.on('UserLeft', (data) => {
+  console.log('run')
+  console.log(data)
   game.playersInLobby = data.players;
 });
 
-const join = () => {
-  gameService.join(username.value)
-      .then(_ => game.scene = 'lobby')
+const join = async () => {
+  await gameService.join(username.value);
+
+  conn.start()
+      .then(() => console.log('connected'))
+      .catch((err) => console.error('SignalR connection error:', err));
+  
+  game.scene = 'lobby';
+}
+const startGame = () => {
+  gameService.startGame()
+      .then(res => console.log('starting'))
       .catch(err => console.log(err));
 }
 </script>
@@ -44,7 +52,6 @@ const join = () => {
         <div>
           <label for="username">Player Username</label>
           <input type="text" v-model="username" id="username" placeholder="Enter username...">
-          <span v-if="message" id="validation-message">{{ message }}</span>
         </div>
         <button type="submit">Join</button>
       </form>
@@ -55,6 +62,7 @@ const join = () => {
       <ul>
         <li v-for="(player, index) in game.playersInLobby" :key="index">{{ player.username }}</li>
       </ul>
+      <button @click="startGame">Start Game</button>
     </section>
   </div>
 </template>
