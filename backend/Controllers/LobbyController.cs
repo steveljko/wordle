@@ -13,22 +13,19 @@ public class JoinRequest
     public string Username { get; set; }
 }
 
-[Route("/lobby")]
 public class LobbyController : Controller
 {
     private readonly LobbyService _lobbyService;
     private readonly IHubContext<GameHub> _hubContext;
-    private readonly IHttpContextAccessor _httpContext;
     
-    public LobbyController(LobbyService lobbyService, IHubContext<GameHub> hubContext, IHttpContextAccessor httpContext)
+    public LobbyController(LobbyService lobbyService, IHubContext<GameHub> hubContext)
     {
         _lobbyService = lobbyService;
         _hubContext = hubContext;
-        _httpContext = httpContext;
     }
     
-    [HttpPost]
-    public async Task<IActionResult> Join([FromBody] JoinRequest request)
+    [HttpPost("/lobby")]
+    public IActionResult Join([FromBody] JoinRequest request)
     {
         if (string.IsNullOrEmpty(request.Username))
         {
@@ -45,6 +42,42 @@ public class LobbyController : Controller
             Expires = DateTimeOffset.UtcNow.AddDays(1)
         });
 
+        return Ok();
+    }
+    
+    [HttpDelete("/leave")]
+    public IActionResult Leave()
+    {
+        if (!Request.Cookies.ContainsKey("username"))
+        {
+            return BadRequest(new
+            {
+                Code = "EmptyUsername",
+                Message = "You are not logged in!"
+            });
+        }
+        
+        Response.Cookies.Delete("username");
+        
+        return Ok(new { Message = "You have successfully logged out." });
+    }
+
+    [HttpPost("/startGame")]
+    public async Task<IActionResult> StartGame()
+    {
+        if (_lobbyService.GetAllPlayersInLobby().Count <= 2)
+        {
+            return BadRequest(new
+            {
+                Code = "NotEnoughPlayersInLobby",
+                Message = "There are not enough players in the lobby to start the game."
+            });
+        }
+
+        await _hubContext.Clients.Groups("Lobby").SendAsync("GameStarted");
+
+        _lobbyService.StartGame();
+        
         return Ok();
     }
 }

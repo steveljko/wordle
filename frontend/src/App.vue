@@ -1,8 +1,8 @@
 <script setup>
 import GameService from '@/services/game';
-import { ref, reactive } from 'vue';
+import {ref, reactive, onMounted} from 'vue';
 import * as signalR from '@microsoft/signalr';
-
+import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 
 const game = reactive({
@@ -12,36 +12,74 @@ const game = reactive({
 
 const username = ref('');
 
+function getCookieValue(cookieName) {
+  const cookies = document.cookie;
+  const regex = new RegExp('(^|; )' + cookieName + '=([^;]*)');
+  const match = regex.exec(cookies);
+
+  if (match) {
+    return decodeURIComponent(match[2]);
+  } else {
+    return null;
+  }
+}
+
 const conn = new signalR.HubConnectionBuilder()
     .withUrl('http://localhost:8080/game', { withCredentials: true })
     .withAutomaticReconnect()
     .build();
 
-const gameService = new GameService(conn);
+const gameService = new GameService();
+
+onMounted(async () => {
+  const cookieUsername = getCookieValue('username');
+
+  if (cookieUsername) {
+    await gameService.join(cookieUsername);
+
+    conn.start()
+        .then(() => console.log('connected'))
+        .catch((err) => console.error('SignalR connection error:', err));
+
+    game.scene = 'lobby';
+    
+    toast(`Ỳou are auto logged in as ${cookieUsername}`, { autoClose: 3000 });
+  }
+});
 
 conn.on('UserJoined', (data) => {
   game.playersInLobby = data.players;
 });
 
 conn.on('UserLeft', (data) => {
-  console.log('run')
-  console.log(data)
   game.playersInLobby = data.players;
 });
 
-const join = async () => {
-  await gameService.join(username.value);
+conn.on('GameStarted', (data) => {
+  game.scene = 'game';
+});
 
-  conn.start()
-      .then(() => console.log('connected'))
-      .catch((err) => console.error('SignalR connection error:', err));
-  
-  game.scene = 'lobby';
+const join = async () => {
+  try {
+    const { status } = await gameService.join(username.value);
+    
+    if (status == 200) {
+      await conn.start();
+      game.scene = 'lobby';
+      username.value = '';
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
-const startGame = () => {
-  gameService.startGame()
-      .then(res => console.log('starting'))
-      .catch(err => console.log(err));
+
+const leave = async () => {
+  await gameService.leave();
+  game.scene = 'login';
+}
+
+const startGame = async () => {
+  await gameService.startGame();
 }
 </script>
 
@@ -63,6 +101,11 @@ const startGame = () => {
         <li v-for="(player, index) in game.playersInLobby" :key="index">{{ player.username }}</li>
       </ul>
       <button @click="startGame">Start Game</button>
+      <button @click="leave">Logout</button>
+    </section>
+    
+    <section id="game" v-if="game.scene == 'game'">
+      <h3>Woho game is started</h3>
     </section>
   </div>
 </template>

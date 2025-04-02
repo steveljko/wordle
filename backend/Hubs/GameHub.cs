@@ -21,6 +21,11 @@ public class GameHub : Hub
         if (!string.IsNullOrEmpty(username))
         {
             Groups.AddToGroupAsync(Context.ConnectionId, "Lobby");
+
+            if (_lobbyService.lobby.HasGameInProgress == true)
+            {
+                Clients.Groups("Lobby").SendAsync("GameStarted");
+            }
                 
             var player = new Player
             {
@@ -38,20 +43,6 @@ public class GameHub : Hub
         }
 
         return base.OnConnectedAsync();
-    }
-    
-    public async Task StartGame()
-    {
-        if (_lobbyService.GetAllPlayersInLobby().Count >= 2)
-        {
-            await Clients.Client(Context.ConnectionId).SendAsync("Error", new
-            {
-                Code = "NoEnoughPlayersInLobby",
-                Message = "Not enough players in the lobby."
-            });
-        }
-
-        await Clients.All.SendAsync("GameStarted");
     }
     
     public override async Task OnDisconnectedAsync(Exception exception)

@@ -1,28 +1,39 @@
 import axios from 'axios';
 import { toast } from 'vue3-toastify';
+
+const axiosInstance = axios.create({
+  baseURL: 'http://localhost:8080',
+  withCredentials: true,
+});
+
+axiosInstance.interceptors.response.use(
+    response => response,
+    error => {
+      const { response } = error;
+      if (response) {
+        const { status, data } = response;
+        if (status === 400) {
+          toast(data.message, { autoClose: 5000 });
+        }
+      }
+      return Promise.reject(error);
+    }
+);
+
 class GameService {
-  constructor(conn) {
-    this.conn = conn;
+  async join(username) {
+    const { status, data } = await axiosInstance.post('/lobby', { username });
+    return { status, data };
   }
 
-  async join(username) {
-    try {
-      const { status, data } = await axios.post('http://localhost:8080/lobby', { username }, { withCredentials: true })
-    } catch (err) {
-      console.log(err.response);
-      const { status, data } = err.response;
-      if (status == 400) {
-        toast(data.message, { autoClose: 5000 });
-      }
-    }
+  async leave() {
+    const { status, data } = await axiosInstance.delete('/leave');
+    return { stats, data };
   }
-  
-  startGame() {
-    return new Promise((resolve, reject) => {
-      this.conn.invoke('StartGame')
-          .then(res => resolve(res))
-          .catch(err => reject(err));
-    });
+
+  async startGame() {
+    const { status, data } = await axiosInstance.post('/startGame');;
+    return { stats, data };
   }
 }
 

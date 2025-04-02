@@ -8,6 +8,7 @@ public class LobbyService
     {
         Id = Guid.NewGuid(),
         Players = new List<Player>(),
+        HasGameInProgress = false
     };
     
     public void AddPlayer(Player player)
@@ -32,5 +33,10 @@ public class LobbyService
     public List<Player> GetAllPlayersInLobby()
     {
         return lobby.Players;
+    }
+
+    public void StartGame()
+    {
+        lobby.HasGameInProgress = true;
     }
 }
