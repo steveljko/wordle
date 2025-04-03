@@ -18,7 +18,8 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
-builder.Services.AddSingleton<LobbyService>();
+builder.Services.AddSingleton<ILobbyService, LobbyService>();
+builder.Services.AddSingleton<IGameService, GameService>();
 
 var app = builder.Build();
 

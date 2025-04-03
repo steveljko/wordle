@@ -61,3 +61,33 @@ span#validation-message {
   display: block;
   color: #cf000f;
 }
+
+ul#messages li.success {
+  color: green;
+}
+
+ul#messages li.fail {
+  color: red;
+}
+
+section#game {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+}
+
+#chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#chat form {
+  display: flex;
+}
+
+#messages {
+  flex-grow: 1;
+  overflow-y: auto;
+}

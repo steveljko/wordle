@@ -15,12 +15,14 @@ public class JoinRequest
 
 public class LobbyController : Controller
 {
-    private readonly LobbyService _lobbyService;
+    private readonly ILobbyService _lobbyService;
+    private readonly IGameService _gameService;
     private readonly IHubContext<GameHub> _hubContext;
     
-    public LobbyController(LobbyService lobbyService, IHubContext<GameHub> hubContext)
+    public LobbyController(ILobbyService lobbyService, IGameService gameService, IHubContext<GameHub> hubContext)
     {
         _lobbyService = lobbyService;
+        _gameService = gameService;
         _hubContext = hubContext;
     }
     
@@ -74,9 +76,10 @@ public class LobbyController : Controller
             });
         }
 
-        await _hubContext.Clients.Groups("Lobby").SendAsync("GameStarted");
 
         _lobbyService.StartGame();
+        await _hubContext.Clients.Groups("Lobby").SendAsync("GameStarted");
+        await _gameService.UpdateLeaderboard();
         
         return Ok();
     }

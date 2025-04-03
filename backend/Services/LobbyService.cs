@@ -2,7 +2,7 @@ using backend.Models;
 
 namespace backend.Services;
 
-public class LobbyService
+public class LobbyService : ILobbyService
 {
     public Lobby lobby { get; private set; } = new Lobby
     {
@@ -38,5 +38,19 @@ public class LobbyService
     public void StartGame()
     {
         lobby.HasGameInProgress = true;
+    }
+
+    public bool GameIsStarted()
+    {
+        return lobby.HasGameInProgress == true;
+    }
+    
+    public void AddPointsToPlayer(string playerId, int points)
+    {
+        var player = FindPlayerById(playerId);
+        if (player != null)
+        {
+            player.Points += points;
+        }
     }
 }

@@ -8,6 +8,7 @@ import 'vue3-toastify/dist/index.css';
 const game = reactive({
   scene: 'login',
   playersInLobby: [],
+  leaderboard: [],
 });
 
 const username = ref('');
@@ -59,6 +60,26 @@ conn.on('GameStarted', (data) => {
   game.scene = 'game';
 });
 
+const input = ref('');
+const guess = async () => {
+  if (input.value == "") {
+    toast("You can't submit", { autoClose: 2000 });
+    return;
+  }
+  
+  conn.invoke('GuessWord', input.value);
+}
+
+conn.on('UpdateLeaderboard', (data) => {
+  game.leaderboard = data;
+});
+
+const messages = ref([]);
+conn.on('Broadcast', (data) => {
+  messages.value.push(data);
+  input.value = '';
+});
+
 const join = async () => {
   try {
     const { status } = await gameService.join(username.value);
@@ -105,7 +126,29 @@ const startGame = async () => {
     </section>
     
     <section id="game" v-if="game.scene == 'game'">
-      <h3>Woho game is started</h3>
+      <div id="leaderboard">
+        <ul>
+          <li v-for="(player, index) in game.leaderboard" :key="index">
+            {{ player.username }}: {{ player.points }} points
+          </li>
+        </ul>
+      </div>
+      <div>
+        Canvas here
+      </div>
+      <div id="chat">
+        <ul id="messages">
+          <li 
+              v-for="(message, index) in messages"
+              :key="index"
+              :class="{ 'success': message.success, 'fail': !message.success }"
+          >{{ message.message }}</li>
+        </ul>
+        <form @submit.prevent="guess">
+          <input v-model="input" placeholder="Enter message or word guess">
+          <button type="submit">Send</button>
+        </form>
+      </div>
     </section>
   </div>
 </template>

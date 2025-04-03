@@ -28,12 +28,12 @@ class GameService {
 
   async leave() {
     const { status, data } = await axiosInstance.delete('/leave');
-    return { stats, data };
+    return { status, data };
   }
 
   async startGame() {
     const { status, data } = await axiosInstance.post('/startGame');;
-    return { stats, data };
+    return { status, data };
   }
 }
 
