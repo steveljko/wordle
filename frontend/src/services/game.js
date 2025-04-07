@@ -26,6 +26,11 @@ class GameService {
     return { status, data };
   }
 
+  async selectWord(word) {
+    const { status, data } = await axiosInstance.post('/select', { word });
+    return { status, data };
+  }
+
   async leave() {
     const { status, data } = await axiosInstance.delete('/leave');
     return { status, data };
@@ -33,6 +38,11 @@ class GameService {
 
   async startGame() {
     const { status, data } = await axiosInstance.post('/startGame');;
+    return { status, data };
+  }
+
+  async stopGame() {
+    const { status, data } = await axiosInstance.delete('/stopGame');
     return { status, data };
   }
 }

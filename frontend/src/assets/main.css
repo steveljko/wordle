@@ -62,13 +62,6 @@ span#validation-message {
   color: #cf000f;
 }
 
-ul#messages li.success {
-  color: green;
-}
-
-ul#messages li.fail {
-  color: red;
-}
 
 section#game {
   display: grid;
@@ -80,7 +73,10 @@ section#game {
 #chat {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  padding: 1rem;
+  height: 100vh;
+  border-left: 1px solid #ddd;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, .1);
 }
 
 #chat form {
@@ -90,4 +86,17 @@ section#game {
 #messages {
   flex-grow: 1;
   overflow-y: auto;
+}
+
+ul#messages li {
+  font-size: 14px;
+  margin-bottom: .5rem;
+}
+
+ul#messages li.success {
+  color: green;
+}
+
+ul#messages li.fail {
+  color: red;
 }

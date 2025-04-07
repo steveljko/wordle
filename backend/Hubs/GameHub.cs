@@ -1,7 +1,6 @@
 using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.VisualBasic;
 
 namespace backend.Hubs;
 
@@ -28,7 +27,7 @@ public class GameHub : Hub
             {
                 Clients.Groups("Lobby").SendAsync("GameStarted");
             }
-                
+
             var player = new Player
             {
                 Id = Context.ConnectionId,
@@ -50,7 +49,18 @@ public class GameHub : Hub
     public async Task GuessWord(string word)
     {
         var player = _lobbyService.FindPlayerById(Context.ConnectionId);
-        var ok = await _gameService.GuessWord(_lobbyService.FindPlayerById(Context.ConnectionId), word);
+
+        if (_gameService.IsCurrentDrawer(player))
+        {
+          await Clients.Caller.SendAsync("Broadcast", new
+              {
+              Success = false,
+              Message = "You can't guess the word while you're drawing!"
+              });
+          return;
+        }
+
+        var ok = await _gameService.GuessWord(player, word);
 
         if (ok)
         {
@@ -61,6 +71,7 @@ public class GameHub : Hub
             });
             
             await _gameService.UpdateLeaderboard();
+            await _gameService.NextTurn();
         }
         else
         {
@@ -71,7 +82,7 @@ public class GameHub : Hub
             });
         }
     }
-    
+ 
     public override async Task OnDisconnectedAsync(Exception exception)
     {
         _lobbyService.RemovePlayer(Context.ConnectionId);

@@ -40,9 +40,15 @@ public class LobbyService : ILobbyService
         lobby.HasGameInProgress = true;
     }
 
+    public void StopGame()
+    {
+        lobby.HasGameInProgress = false;
+        lobby.Players = new List<Player>();
+    }
+
     public bool GameIsStarted()
     {
-        return lobby.HasGameInProgress == true;
+        return lobby.HasGameInProgress;
     }
     
     public void AddPointsToPlayer(string playerId, int points)

@@ -1,4 +1,5 @@
 <script setup>
+import Modal from '@/components/Modal.vue';
 import GameService from '@/services/game';
 import {ref, reactive, onMounted} from 'vue';
 import * as signalR from '@microsoft/signalr';
@@ -7,8 +8,12 @@ import 'vue3-toastify/dist/index.css';
 
 const game = reactive({
   scene: 'login',
+  
   playersInLobby: [],
   leaderboard: [],
+
+  words: [],
+  drawingWord: '',
 });
 
 const username = ref('');
@@ -43,21 +48,20 @@ onMounted(async () => {
         .catch((err) => console.error('SignalR connection error:', err));
 
     game.scene = 'lobby';
-    
+
     toast(`Ỳou are auto logged in as ${cookieUsername}`, { autoClose: 3000 });
   }
 });
 
-conn.on('UserJoined', (data) => {
-  game.playersInLobby = data.players;
-});
+conn.on('UserJoined', (data) => game.playersInLobby = data.players);
+conn.on('UserLeft', (data) => game.playersInLobby = data.players);
+conn.on('GameStarted', _ => game.scene = 'game');
+conn.on('GameStopped', _ => game.scene = 'lobby');
 
-conn.on('UserLeft', (data) => {
-  game.playersInLobby = data.players;
-});
-
-conn.on('GameStarted', (data) => {
-  game.scene = 'game';
+const yourTurn = ref(false);
+conn.on('YourTurn', (data) => {
+  yourTurn.value = true;
+  game.words = data.words;
 });
 
 const input = ref('');
@@ -66,7 +70,7 @@ const guess = async () => {
     toast("You can't submit", { autoClose: 2000 });
     return;
   }
-  
+
   conn.invoke('GuessWord', input.value);
 }
 
@@ -83,7 +87,7 @@ conn.on('Broadcast', (data) => {
 const join = async () => {
   try {
     const { status } = await gameService.join(username.value);
-    
+
     if (status == 200) {
       await conn.start();
       game.scene = 'lobby';
@@ -101,6 +105,18 @@ const leave = async () => {
 
 const startGame = async () => {
   await gameService.startGame();
+}
+
+const stopGame = async () => {
+  await gameService.stopGame();
+}
+
+const selectWord = async (word) => {
+  const { status } = await gameService.selectWord(word);
+  if (status === 200) {
+    yourTurn.value = false;
+    game.drawingWord = word;
+  }
 }
 </script>
 
@@ -124,21 +140,35 @@ const startGame = async () => {
       <button @click="startGame">Start Game</button>
       <button @click="leave">Logout</button>
     </section>
-    
+
     <section id="game" v-if="game.scene == 'game'">
       <div id="leaderboard">
         <ul>
           <li v-for="(player, index) in game.leaderboard" :key="index">
-            {{ player.username }}: {{ player.points }} points
+            {{ index + 1 }}. {{ player.username }}: {{ player.points }} points
           </li>
         </ul>
       </div>
       <div>
-        Canvas here
+        <Modal :isOpen="yourTurn" id="modal">
+          <template #header>Select a Word</template>
+          <template #content>
+            <button
+                v-for="word in game.words"
+                @click="selectWord(word)"
+                :key="word">
+              {{ word }}
+            </button>
+          </template>
+        </Modal>
+
+        {{ game.drawingWord }}
+
+        <button @click="stopGame">Stop Game</button>
       </div>
       <div id="chat">
         <ul id="messages">
-          <li 
+          <li
               v-for="(message, index) in messages"
               :key="index"
               :class="{ 'success': message.success, 'fail': !message.success }"

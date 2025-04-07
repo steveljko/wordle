@@ -1,6 +1,4 @@
-using System.Net;
 using backend.Hubs;
-using backend.Models;
 using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -11,6 +9,11 @@ namespace backend.Controllers;
 public class JoinRequest
 {
     public string Username { get; set; }
+}
+
+public class SelectWordRequest
+{
+    public string Word { get; set; }
 }
 
 public class LobbyController : Controller
@@ -79,8 +82,32 @@ public class LobbyController : Controller
 
         _lobbyService.StartGame();
         await _hubContext.Clients.Groups("Lobby").SendAsync("GameStarted");
-        await _gameService.UpdateLeaderboard();
+        await _gameService.OnStart();
         
         return Ok();
+    }
+
+    [HttpDelete("/stopGame")]
+    public async Task<IActionResult> StopGame()
+    {
+        _lobbyService.StopGame();
+        await _hubContext.Clients.Groups("Lobby").SendAsync("GameStopped");
+        
+        return Ok();
+    }
+
+    [HttpPost("/select")]
+    public async Task<IActionResult> SelectWord([FromBody] SelectWordRequest request)
+    {
+      if (string.IsNullOrEmpty(request.Word))
+      {
+        return BadRequest(new {
+          Message = "You must choose word."
+        });
+      }
+
+      await _gameService.SelectWord(request.Word);
+
+      return Ok(new { success = true });
     }
 }

@@ -9,6 +9,7 @@ public interface ILobbyService
     Player FindPlayerById(string id);
     List<Player> GetAllPlayersInLobby();
     void StartGame();
+    void StopGame();
     bool GameIsStarted();
     void AddPointsToPlayer(string playerId, int points);
 }
