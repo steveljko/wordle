@@ -1,22 +1,31 @@
 <script setup>
+import { ref, reactive, onMounted } from 'vue';
+
 import Modal from '@/components/Modal.vue';
-import GameService from '@/services/game';
-import {ref, reactive, onMounted} from 'vue';
+import Chat from '@/components/Chat.vue';
+
 import * as signalR from '@microsoft/signalr';
+import GameService from '@/services/game';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
 
 const game = reactive({
   scene: 'login',
-  
   playersInLobby: [],
   leaderboard: [],
-
   words: [],
   drawingWord: '',
 });
 
 const username = ref('');
+const yourTurn = ref(false);
+
+const conn = new signalR.HubConnectionBuilder()
+    .withUrl('http://localhost:8080/game', { withCredentials: true })
+    .withAutomaticReconnect()
+    .build();
+
+const gameService = new GameService();
 
 function getCookieValue(cookieName) {
   const cookies = document.cookie;
@@ -30,13 +39,6 @@ function getCookieValue(cookieName) {
   }
 }
 
-const conn = new signalR.HubConnectionBuilder()
-    .withUrl('http://localhost:8080/game', { withCredentials: true })
-    .withAutomaticReconnect()
-    .build();
-
-const gameService = new GameService();
-
 onMounted(async () => {
   const cookieUsername = getCookieValue('username');
 
@@ -49,7 +51,7 @@ onMounted(async () => {
 
     game.scene = 'lobby';
 
-    toast(`Ỳou are auto logged in as ${cookieUsername}`, { autoClose: 3000 });
+    toast(`You are auto logged in as ${cookieUsername}`, { autoClose: 3000 });
   }
 });
 
@@ -57,38 +59,23 @@ conn.on('UserJoined', (data) => game.playersInLobby = data.players);
 conn.on('UserLeft', (data) => game.playersInLobby = data.players);
 conn.on('GameStarted', _ => game.scene = 'game');
 conn.on('GameStopped', _ => game.scene = 'lobby');
+conn.on('GameDone', _ => game.scene = 'lobby');
+conn.on('UpdateLeaderboard', (data) => game.leaderboard = data);
 
-const yourTurn = ref(false);
 conn.on('YourTurn', (data) => {
   yourTurn.value = true;
   game.words = data.words;
 });
 
-const input = ref('');
-const guess = async () => {
-  if (input.value == "") {
-    toast("You can't submit", { autoClose: 2000 });
-    return;
-  }
-
-  conn.invoke('GuessWord', input.value);
-}
-
-conn.on('UpdateLeaderboard', (data) => {
-  game.leaderboard = data;
-});
-
-const messages = ref([]);
-conn.on('Broadcast', (data) => {
-  messages.value.push(data);
-  input.value = '';
+conn.on('WordSelected', () => {
+  yourTurn.value = false;
 });
 
 const join = async () => {
   try {
     const { status } = await gameService.join(username.value);
 
-    if (status == 200) {
+    if (status === 200) {
       await conn.start();
       game.scene = 'lobby';
       username.value = '';
@@ -166,19 +153,8 @@ const selectWord = async (word) => {
 
         <button @click="stopGame">Stop Game</button>
       </div>
-      <div id="chat">
-        <ul id="messages">
-          <li
-              v-for="(message, index) in messages"
-              :key="index"
-              :class="{ 'success': message.success, 'fail': !message.success }"
-          >{{ message.message }}</li>
-        </ul>
-        <form @submit.prevent="guess">
-          <input v-model="input" placeholder="Enter message or word guess">
-          <button type="submit">Send</button>
-        </form>
-      </div>
+      
+      <Chat :connection="conn" />
     </section>
   </div>
 </template>
