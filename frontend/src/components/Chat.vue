@@ -1,20 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, inject, onMounted } from 'vue';
 import { toast } from 'vue3-toastify';
 import * as signalR from '@microsoft/signalr';
 
 const messages = ref([]);
 const input = ref('');
-
-const props = defineProps({
-  connection: {
-    type: Object,
-    required: true
-  }
-});
+const hub = inject('hub');
 
 onMounted(() => {
-  props.connection.on('Broadcast', (data) => {
+  hub.on('Broadcast', (data) => {
     messages.value.push(data);
     input.value = '';
   });
@@ -26,7 +20,7 @@ const guess = async () => {
     return;
   }
 
-  await props.connection.invoke('GuessWord', input.value);
+  await hub.invoke('GuessWord', input.value);
 };
 </script>
 
@@ -37,7 +31,7 @@ const guess = async () => {
           v-for="(message, index) in messages"
           :key="index"
           :class="{ 'success': message.success, 'fail': !message.success }"
-      >{{ message.message }}</li>
+      >{{ message.message }} {{ message.timestamp }}</li>
     </ul>
     <form @submit.prevent="guess">
       <input v-model="input" placeholder="Enter message or word guess">
