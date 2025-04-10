@@ -51,7 +51,7 @@ public class LobbyController : Controller
     }
     
     [HttpDelete("/leave")]
-    public IActionResult Leave()
+    public async Task<IActionResult> Leave()
     {
         if (!Request.Cookies.ContainsKey("username"))
         {
@@ -63,6 +63,11 @@ public class LobbyController : Controller
         }
         
         Response.Cookies.Delete("username");
+
+        await _hubContext.Clients.Groups("Lobby").SendAsync("UserLeft", new
+            {
+            Players = _lobbyService.GetAllPlayersInLobby()
+            });
         
         return Ok(new { Message = "You have successfully logged out." });
     }
@@ -70,7 +75,7 @@ public class LobbyController : Controller
     [HttpPost("/startGame")]
     public async Task<IActionResult> StartGame()
     {
-        if (_lobbyService.GetAllPlayersInLobby().Count <= 2)
+        if (_lobbyService.GetAllPlayersInLobby().Count < 2)
         {
             return BadRequest(new
             {
@@ -78,7 +83,6 @@ public class LobbyController : Controller
                 Message = "There are not enough players in the lobby to start the game."
             });
         }
-
 
         _lobbyService.StartGame();
         await _hubContext.Clients.Groups("Lobby").SendAsync("GameStarted");
@@ -108,6 +112,6 @@ public class LobbyController : Controller
 
       await _gameService.SelectWord(request.Word);
 
-      return Ok(new { success = true });
+      return Ok(new { Success = true });
     }
 }

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, inject, onMounted } from 'vue';
+import moment from 'moment';
 import { toast } from 'vue3-toastify';
 import * as signalR from '@microsoft/signalr';
 
@@ -31,7 +32,7 @@ const guess = async () => {
           v-for="(message, index) in messages"
           :key="index"
           :class="{ 'success': message.success, 'fail': !message.success }"
-      >{{ message.message }} {{ message.timestamp }}</li>
+      >{{ message.message }} {{ moment(message.timestamp).format('HH:mm') }}</li>
     </ul>
     <form @submit.prevent="guess">
       <input v-model="input" placeholder="Enter message or word guess">

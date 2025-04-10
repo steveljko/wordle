@@ -1,5 +1,6 @@
 using backend.Hubs;
 using backend.Models;
+using backend.Responses;
 using Microsoft.AspNetCore.SignalR;
 
 namespace backend.Services;
@@ -8,8 +9,8 @@ public class GameService : IGameService
 {
     private readonly ILobbyService _lobbyService;
     private readonly IHubContext<GameHub> _hubContext;
-    private int _currentPlayerIdx { get; set; }
-    private string _wordToDraw { get; set; }
+    private int CurrentPlayerIdx { get; set; } = 0;
+    private string WordToDraw { get; set; } = "asd123";
     private static readonly List<string> _wordList = new List<string>
     {
         "Apple", "House", "Tree", "Sun", "Cat", "Dog", "Flower", "Book", "Star", "Moon",
@@ -27,20 +28,13 @@ public class GameService : IGameService
 
     public async Task OnStart()
     {
-        _currentPlayerIdx = 0;
-
-        var player = _lobbyService.GetAllPlayersInLobby()[_currentPlayerIdx];
-
-        Random random = new Random();
-        await _hubContext.Clients.Client(player.Id).SendAsync("YourTurn", new
-        {
-          Words = _wordList.OrderBy(x => random.Next()).Take(3).ToArray()
-        });
+      await UpdateLeaderboard(); // initilize leaderboard
+      await NotifyNextPlayer();
     }
 
     public async Task SelectWord(string word)
     {
-      _wordToDraw = word;
+      WordToDraw = word;
 
       await _hubContext.Clients.All.SendAsync("WordSelected");
     }
@@ -49,13 +43,11 @@ public class GameService : IGameService
     {
         if (_lobbyService.GameIsStarted())
         {
-            if (_wordToDraw.Equals(word, StringComparison.OrdinalIgnoreCase))
+            if (WordToDraw.Equals(word, StringComparison.OrdinalIgnoreCase))
             {
                 _lobbyService.AddPointsToPlayer(player.Id, 10);
 
                 await UpdateLeaderboard();
-
-                await NextTurn();
                 
                 return true;
             }
@@ -63,25 +55,25 @@ public class GameService : IGameService
 
         return false;
     }
-
-    /// <summary>
-    /// Moves to the next player's turn and sends them new word options.
-    /// </summary>
-    public async Task NextTurn()
+    
+    public async Task<Player> NextTurn()
     {
-      _currentPlayerIdx = (_currentPlayerIdx + 1) % _lobbyService.GetAllPlayersInLobby().Count;
+        // reset word
+        WordToDraw = string.Empty;
+        
+        var players = _lobbyService.GetAllPlayersInLobby();
+        if (players.Count > 0)
+        {
+            CurrentPlayerIdx = (CurrentPlayerIdx + 1) % players.Count;
+            
+            var nextDrawer = players[CurrentPlayerIdx];
 
-      var player = _lobbyService.GetAllPlayersInLobby()[_currentPlayerIdx];
-
-      await _hubContext.Clients.Groups("Lobby").SendAsync("NextTurn");
-
-      Random random = new Random();
-      await _hubContext.Clients.Client(player.Id).SendAsync("YourTurn", new
-      {
-          Words = _wordList.OrderBy(x => random.Next()).Take(3).ToArray()
-      });
-
-      _wordToDraw = string.Empty;
+            await NotifyNextPlayer();
+            
+            return nextDrawer;
+        }
+        
+        return null;
     }
     
     public async Task UpdateLeaderboard()
@@ -103,7 +95,26 @@ public class GameService : IGameService
     /// </summary>
     public bool IsCurrentDrawer(Player player)
     {
-      var currentlyDrawingPlayer = _lobbyService.GetAllPlayersInLobby()[_currentPlayerIdx];
-      return player.Id == currentlyDrawingPlayer.Id;
+        var currentlyDrawingPlayer = _lobbyService.GetAllPlayersInLobby()[CurrentPlayerIdx];
+        return player.Id == currentlyDrawingPlayer.Id;
+    }
+
+    // <summary>
+    // Notify next user that is his turn and show them words for drawing.
+    // </summar>
+    private async Task NotifyNextPlayer()
+    {
+        var player = _lobbyService.GetAllPlayersInLobby()[CurrentPlayerIdx];
+        Random random = new Random();
+        
+        await _hubContext.Clients.Groups("Lobby").SendAsync("Broadcast", new BroadcastResponse
+          {
+          Message = $"It's {player.Username} turn!",
+          });
+
+        await _hubContext.Clients.Client(player.Id).SendAsync("YourTurn", new
+        {
+            Words = _wordList.OrderBy(x => random.Next()).Take(3).ToArray()
+        });
     }
 }

@@ -43,7 +43,6 @@ public class LobbyService : ILobbyService
     public void StopGame()
     {
         lobby.HasGameInProgress = false;
-        lobby.Players = new List<Player>();
     }
 
     public bool GameIsStarted()
