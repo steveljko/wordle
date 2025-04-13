@@ -5,10 +5,21 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace backend.Hubs;
 
+public class DrawAction
+{
+  public string ActionType { get; set; }
+  public double X { get; set; }
+  public double Y { get; set; }
+  public string Color { get; set; }
+  public int LineWidth { get; set; }
+}
+
 public class GameHub : Hub
 {
   private readonly ILobbyService _lobbyService;
   private readonly IGameService _gameService;
+  private static List<DrawAction> drawingHistory = new List<DrawAction>();
+  private static int maxHistorySize = 1000;
 
   public GameHub(ILobbyService lobbyService, IGameService gameService)
   {
@@ -81,6 +92,18 @@ public class GameHub : Hub
           Message = $"Player {player.Username} failed word guess."
           });
     }
+  }
+
+  // Draw Actions
+  public async Task Draw(DrawAction drawAction)
+  {
+    Console.WriteLine(drawAction.ToString());
+    await Clients.Groups("Lobby").SendAsync("ReceiveDrawAction", drawAction);
+  }
+
+  public async Task ClearCanvas()
+  {
+    await Clients.Groups("Lobby").SendAsync("ClearCanvas");
   }
 
   public override async Task OnDisconnectedAsync(Exception exception)

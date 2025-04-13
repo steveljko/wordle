@@ -3,6 +3,7 @@ import { ref, reactive, inject } from 'vue';
 import GameService from '@/services/game';
 import { toast } from 'vue3-toastify';
 
+import Canvas from '@/components/Canvas.vue';
 import Modal from '@/components/Modal.vue';
 import Chat from '@/components/Chat.vue';
 
@@ -19,6 +20,8 @@ const GameEvents = {
 }
 
 const leaderboard = ref([]);
+const isDrawer = ref(false);
+
 const yourTurn = ref(false);
 const words = ref([]);
 const wordToDraw = ref('');
@@ -28,6 +31,7 @@ hub.on(GameEvents.GameStarted, _ => scene.value = 'game');
 hub.on(GameEvents.UpdateLeaderboard, (data) => leaderboard.value = data);
 
 hub.on(GameEvents.YourTurn, ({ words: wordsToPick }) => {
+  isDrawer.value = true;
   yourTurn.value = true;
   words.value = wordsToPick;
 });
@@ -66,7 +70,7 @@ const selectWord = async (word) => {
         </template>
       </Modal>
 
-      {{ wordToDraw }}
+      <Canvas :isDrawer="isDrawer"/>
     </div>
     <Chat />
   </section>
