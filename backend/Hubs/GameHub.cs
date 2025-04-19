@@ -18,8 +18,6 @@ public class GameHub : Hub
 {
   private readonly ILobbyService _lobbyService;
   private readonly IGameService _gameService;
-  private static List<DrawAction> drawingHistory = new List<DrawAction>();
-  private static int maxHistorySize = 1000;
 
   public GameHub(ILobbyService lobbyService, IGameService gameService)
   {
@@ -82,6 +80,8 @@ public class GameHub : Hub
           Message = $"Player {player.Username} correctly guessed word '{word}' and earned 10 points.",
           });
 
+      await Clients.Groups("Lobby").SendAsync("ClearCanvas");
+
       await _gameService.NextTurn();
     }
     else
@@ -97,7 +97,6 @@ public class GameHub : Hub
   // Draw Actions
   public async Task Draw(DrawAction drawAction)
   {
-    Console.WriteLine(drawAction.ToString());
     await Clients.Groups("Lobby").SendAsync("ReceiveDrawAction", drawAction);
   }
 

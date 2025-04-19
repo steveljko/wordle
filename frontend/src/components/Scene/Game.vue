@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, inject } from 'vue';
+import { ref, computed, reactive, inject } from 'vue';
 import GameService from '@/services/game';
 import { toast } from 'vue3-toastify';
 
@@ -16,7 +16,9 @@ const GameEvents = {
   GameDone: 'GameDone',
   UpdateLeaderboard: 'UpdateLeaderboard',
   YourTurn: 'YourTurn',
-  WordSelected: 'WordSelected'
+  WordSelected: 'WordSelected',
+  StartTimer: 'StartTimer',
+  ResetTimer: 'ResetTimer'
 }
 
 const leaderboard = ref([]);
@@ -42,6 +44,50 @@ hub.on(GameEvents.GameDone, () => {
 });
 
 hub.on(GameEvents.WordSelected, _ => yourTurn.value = false);
+
+// turn timer
+const timeLeft = ref(60);
+const formattedTime = computed(() => {
+  const minutes = String(Math.floor(timeLeft.value / 60)).padStart(2, '0');
+  const seconds = String(timeLeft.value % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
+});
+
+let timerInterval = null;
+hub.on(GameEvents.StartTimer, ({ endTime, duration }) => {
+  endTime = new Date(endTime);
+  timeLeft.value = duration;
+  
+  if (timerInterval) clearInterval(timerInterval);
+
+  const updateTimer = () => {
+    const now = new Date();
+    const remaining = endTime - now;
+  
+    if (remaining <= 0) {
+      timeLeft.value = 0;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      return;
+    }
+  
+    timeLeft.value = Math.ceil(remaining / 1000);
+  };
+
+  updateTimer();
+
+  timerInterval = setInterval(updateTimer, 100);
+});
+
+hub.on(GameEvents.ResetTimer, () => {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  timeLeft.value = 60;
+  endTime = null;
+});
 
 const selectWord = async (word) => {
   await gameService.selectWord(word);
@@ -70,6 +116,7 @@ const selectWord = async (word) => {
         </template>
       </Modal>
 
+      Timeleft: {{ formattedTime }}
       <Canvas :isDrawer="isDrawer"/>
     </div>
     <Chat />

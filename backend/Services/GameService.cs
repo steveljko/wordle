@@ -1,3 +1,4 @@
+using System;
 using backend.Hubs;
 using backend.Models;
 using backend.Responses;
@@ -29,7 +30,7 @@ public class GameService : IGameService
     public async Task OnStart()
     {
       await UpdateLeaderboard(); // initilize leaderboard
-      await NotifyNextPlayer();
+      await NotifyNextPlayer(); // notifies next player and allow to choose a word.
     }
 
     public async Task SelectWord(string word)
@@ -37,6 +38,8 @@ public class GameService : IGameService
       WordToDraw = word;
 
       await _hubContext.Clients.All.SendAsync("WordSelected");
+
+      await StartGameTimer(10);
     }
 
     public async Task<bool> GuessWord(Player player, string word)
@@ -55,7 +58,8 @@ public class GameService : IGameService
 
         return false;
     }
-    
+
+ 
     public async Task<Player> NextTurn()
     {
         // reset word
@@ -116,5 +120,27 @@ public class GameService : IGameService
         {
             Words = _wordList.OrderBy(x => random.Next()).Take(3).ToArray()
         });
+    }
+
+    /// <summary>
+    /// Initiates a game timer for the specified countdown duration. 
+    /// After the countdown expires, it clears the game canvas and 
+    /// triggers the next turn for the players in the lobby.
+    /// </summary>
+    private async Task StartGameTimer(int countdown)
+    {
+      // starts timer and wait
+      var endTime = DateTime.UtcNow.AddSeconds(countdown);
+      await _hubContext.Clients.Groups("Lobby").SendAsync("StartTimer", new { 
+        EndTime = endTime.ToString("o"), // ISO 8601 time format
+        Duration = countdown 
+      });
+
+      await Task.Delay(countdown * 1000); 
+
+      // clear canvas and switch to next user
+      await _hubContext.Clients.Groups("Lobby").SendAsync("ClearCanvas");
+      await _hubContext.Clients.Groups("Lobby").SendAsync("ResetTimer");
+      await NextTurn();
     }
 }
