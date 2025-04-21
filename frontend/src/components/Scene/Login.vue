@@ -26,10 +26,10 @@ const join = async () => {
   <section id="login" v-if="scene == 'login'">
     <form @submit.prevent="join">
       <div>
-        <label for="username">Player Username</label>
-        <input type="text" v-model="username" id="username" placeholder="Enter username...">
+        <label for="username">Username</label>
+        <input type="text" v-model="username" class="full" id="username" placeholder="Enter username...">
       </div>
-      <button type="submit">Join</button>
+      <button class="full" type="submit">Join</button>
     </form>
   </section>
 </template>
