@@ -48,12 +48,14 @@ const leave = async () => {
 </script>
 
 <template>
-  <section id="lobby" v-if="scene == 'lobby'">
-    <h3>Players</h3>
-    <ul>
+  <section id="lobby" class="card" v-if="scene == 'lobby'">
+    <h3>Lobby</h3>
+    <ul id="players">
       <li v-for="(player, index) in data.players" :key="index">{{ player.username }}</li>
     </ul>
-    <button @click="start">Start Game</button>
-    <button @click="leave">Logout</button>
+    <div id="lobby-controls">
+      <button class="btn btn-primary full" @click="start">Start Game</button>
+      <button class="btn btn-danger full" @click="leave">Logout</button>
+    </div>
   </section>
 </template>

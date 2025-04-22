@@ -23,13 +23,25 @@ const join = async () => {
 </script>
 
 <template>
-  <section id="login" v-if="scene == 'login'">
+  <section id="login" class="card" v-if="scene == 'login'">
+    <div class="mb-4">
+      <h1 class="login-title">Welcome to Wordle</h1>
+      <p class="login-subtitle">Join the online drawing game and have fun!</p>
+    </div>
+
     <form @submit.prevent="join">
       <div>
-        <label for="username">Username</label>
-        <input type="text" v-model="username" class="full" id="username" placeholder="Enter username...">
+        <label for="username" class="form-label mb-2">Username</label>
+        <input 
+          type="text" 
+          v-model="username" 
+          class="form-input mb-2" 
+          id="username" 
+          placeholder="Enter your name..."
+          autocomplete="off"
+        >
       </div>
-      <button class="full" type="submit">Join</button>
+      <button class="btn btn-primary full" type="submit">Join</button>
     </form>
   </section>
 </template>
