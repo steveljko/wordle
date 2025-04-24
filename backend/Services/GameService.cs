@@ -11,7 +11,7 @@ public class GameService : IGameService
     private readonly ILobbyService _lobbyService;
     private readonly IHubContext<GameHub> _hubContext;
     private int CurrentPlayerIdx { get; set; } = 0;
-    private string WordToDraw { get; set; } = "asd123";
+    private string WordToDraw { get; set; } = string.Empty;
     private static readonly List<string> _wordList = new List<string>
     {
         "Apple", "House", "Tree", "Sun", "Cat", "Dog", "Flower", "Book", "Star", "Moon",
@@ -20,6 +20,7 @@ public class GameService : IGameService
         "Leaf", "Spider", "Ghost", "Snowman", "Balloon", "Rocket", "Pizza", "Ice cream", "Crown", "Robot",
         "Dragon", "Frog", "Penguin", "Guitar", "Elephant", "Octopus", "Cupcake", "Rainbow", "Snail", "Unicorn"
     };
+    private List<string> _availableWords = new List<string>();
     
     public GameService(ILobbyService lobbyService, IHubContext<GameHub> hubContext)
     {
@@ -33,13 +34,29 @@ public class GameService : IGameService
       await NotifyNextPlayer(); // notifies next player and allow to choose a word.
     }
 
+    /// <summary>
+    /// Determines if the word provided as a parameter is available in the list of words the user can choose.
+    /// </summary>
+    public bool IsWordAvailable(string word)
+    {
+      return _availableWords.Contains(word);
+    }
+
+
+    /// <summary>
+    /// Selects a word for the game, notifies all connected clients, 
+    /// and starts the game timer.
+    /// </summary>
     public async Task SelectWord(string word)
     {
       WordToDraw = word;
 
       await _hubContext.Clients.All.SendAsync("WordSelected");
 
-      await StartGameTimer(10);
+      var player = _lobbyService.GetAllPlayersInLobby()[CurrentPlayerIdx];
+      await _hubContext.Clients.Client(player.Id).SendAsync("WordToDraw", new { Word = WordToDraw });
+
+      await StartGameTimer(1000000);
     }
 
     public async Task<bool> GuessWord(Player player, string word)
@@ -116,9 +133,10 @@ public class GameService : IGameService
           Message = $"It's {player.Username} turn!",
           });
 
+        _availableWords = _wordList.OrderBy(x => random.Next()).Take(3).ToList();
         await _hubContext.Clients.Client(player.Id).SendAsync("YourTurn", new
         {
-            Words = _wordList.OrderBy(x => random.Next()).Take(3).ToArray()
+            Words = _availableWords
         });
     }
 
@@ -131,6 +149,7 @@ public class GameService : IGameService
     {
       // starts timer and wait
       var endTime = DateTime.UtcNow.AddSeconds(countdown);
+      
       await _hubContext.Clients.Groups("Lobby").SendAsync("StartTimer", new { 
         EndTime = endTime.ToString("o"), // ISO 8601 time format
         Duration = countdown 
