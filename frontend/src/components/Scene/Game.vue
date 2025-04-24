@@ -99,11 +99,11 @@ const selectWord = async (word) => {
     <div id="leaderboard">
       <ul>
         <li v-for="(player, index) in leaderboard" :key="index">
-          {{ index + 1 }}. {{ player.username }}: {{ player.points }} points
+          {{ index + 1 }}. {{ player.username }} <span id="points">{{ player.points }} points</span>
         </li>
       </ul>
     </div>
-    <div>
+    <div id="drawing_area">
       <Modal :isOpen="yourTurn" id="modal">
         <template #header>Select a Word</template>
         <template #content>
@@ -116,9 +116,12 @@ const selectWord = async (word) => {
         </template>
       </Modal>
 
-      Timeleft: {{ formattedTime }}
-      <Canvas :isDrawer="isDrawer"/>
+      <div>
+        <p id="timer">🕗 {{ formattedTime }}</p>
+        <Canvas :isDrawer="isDrawer"/>
+      </div>
     </div>
+
     <Chat />
   </section>
 </template>

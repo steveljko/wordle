@@ -53,6 +53,14 @@ p {
   text-transform: uppercase;
 }
 
+.controls label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-bottom: .25rem;
+}
+
 .form-input {
   width: 100%;
   padding: 0.8rem 1rem;
@@ -194,4 +202,76 @@ p {
 
 #lobby #lobby-controls > * {
   margin: 0 .25rem;
+}
+
+/* game scene */
+#game {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  gap: 2rem;
+  height: 100vh;
+  padding: 3rem;
+  background-color: #f5f7fa;
+}
+
+#game #timer {
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-align: center;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+#game #leaderboard {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: var(--card-shadow);
+  height: fit-content;
+}
+
+#game > div:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+#game #leaderboard h2 {
+  text-align: center;
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+#game #leaderboard ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+#game #leaderboard li {
+  padding: 0.75rem;
+  margin-bottom: .5rem;
+  border-radius: .5rem;
+  background-color: #f8f9fa;
+  font-size: 15px;
+  display: flex;
+  justify-content: space-between;
+  transition: transform 0.2s ease;
+}
+
+#game #leaderboard li:hover {
+  background-color: #f2f2f2;
+}
+
+#game #leaderboard li:last-child {
+  margin-bottom: 0;
+}
+
+#game #leaderboard li #points {
+  color: gray;
+  font-size: 0.813rem;
+  font-weight: 600;
 }

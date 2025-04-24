@@ -2,7 +2,6 @@
   <div class="drawing-container">
     <canvas 
       ref="canvasRef" 
-      width="800px" 
       height="600px"
       @mousedown="startDrawing"
       @mousemove="draw"
@@ -14,30 +13,19 @@
     ></canvas>
     
     <div class="controls" v-if="isDrawer">
-      <div class="color-picker">
-        <label for="color-input">Color:</label>
-        <input id="color-input" type="color" v-model="drawingColor" />
-      </div>
-      
-      <div class="line-width">
-        <label for="width-input">Line width:</label>
-        <input 
-          id="width-input" 
-          type="range" 
-          min="1" 
-          max="20" 
-          v-model="lineWidth" 
-        />
-        <span>{{ lineWidth }}px</span>
-      </div>
-      
-      <button @click="hub.invoke('ClearCanvas')">Clear Canvas</button>
+      <ColorPicker v-model="drawingColor" />
+
+      <BrushSize v-model="lineWidth" />
+
+      <button class="btn btn-danger" @click="hub.invoke('ClearCanvas')">Clear Canvas</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, inject, onMounted, watch } from 'vue';
+import ColorPicker from '@/components/ColorPicker.vue';
+import BrushSize from '@/components/BrushSize.vue';
 
 const props = defineProps({
   isDrawer: {
@@ -65,12 +53,20 @@ const lineWidth = ref(5);
 const ctx = ref(null);
 
 const options = reactive({
-  color: '#000',
-  lineWIdth: 5,
+  color: '#000000',
+  lineWidth: 5,
 });
 
 onMounted(() => {
   if (canvasRef.value) {
+    function updateCanvasWidth() {
+      const sectionWidth = document.getElementById('drawing_area').clientWidth;
+      canvasRef.value.width = sectionWidth;
+    }
+
+    updateCanvasWidth();
+    window.addEventListener('resize', updateCanvasWidth);
+
     ctx.value = canvasRef.value.getContext('2d');
     setupCanvas();
   }
@@ -199,41 +195,30 @@ hub.on('ClearCanvas', () => clearCanvas());
 </script>
 
 <style scoped>
-.drawing-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
 canvas {
-  border: 1px solid #ccc;
+  display: block;
+  background-color: white;
   cursor: crosshair;
   touch-action: none;
-  background-color: white;
+  border-radius: 1rem;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 1rem;
 }
 
 .controls {
   display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid var(--primary);
+  border-radius: 1rem;
+  box-shadow: var(--card-shadow);
 }
 
-.color-picker, .line-width {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-input[type="color"] {
-  width: 40px;
-  height: 40px;
-  border: none;
-  cursor: pointer;
-}
-
-input[type="range"] {
-  width: 100px;
+.controls button {
+  height: 2.5rem;
+  text-align: center;
+  padding: 0 1rem;
 }
 </style>
