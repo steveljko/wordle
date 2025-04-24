@@ -17,6 +17,7 @@ const GameEvents = {
   UpdateLeaderboard: 'UpdateLeaderboard',
   YourTurn: 'YourTurn',
   WordSelected: 'WordSelected',
+  WordToDraw: 'WordToDraw',
   StartTimer: 'StartTimer',
   ResetTimer: 'ResetTimer'
 }
@@ -44,6 +45,7 @@ hub.on(GameEvents.GameDone, () => {
 });
 
 hub.on(GameEvents.WordSelected, _ => yourTurn.value = false);
+hub.on(GameEvents.WordToDraw, ({ word }) => wordToDraw.value = word);
 
 // turn timer
 const timeLeft = ref(60);
@@ -117,7 +119,11 @@ const selectWord = async (word) => {
       </Modal>
 
       <div>
-        <p id="timer">🕗 {{ formattedTime }}</p>
+        <div id="topbar">
+          <p id="timer">🕗 {{ formattedTime }}</p>
+          <div v-if="wordToDraw" id="word">✏️ {{ wordToDraw }}</div>
+        </div>
+
         <Canvas :isDrawer="isDrawer"/>
       </div>
     </div>
