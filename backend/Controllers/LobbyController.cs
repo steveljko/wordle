@@ -111,7 +111,7 @@ public class LobbyController : Controller
       }
 
       // check if the word provided by the user is a valid word to choose.
-      if (!_gameService.CanChooseWord(request.Word))
+      if (!_gameService.IsWordAvailable(request.Word))
       {
         return BadRequest(new {
             Message = "The word you provided is not available for selection."
