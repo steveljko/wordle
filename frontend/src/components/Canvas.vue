@@ -123,10 +123,8 @@ const draw = (event) => {
 };
 
 hub.on("ReceiveDrawAction", (drawAction) => {
-    if (!props.isDrawer) {
-      handleRemoteDrawAction(drawAction);
-    }
-  });
+  handleRemoteDrawAction(drawAction);
+});
 
 const handleRemoteDrawAction = (drawAction) => {
   const { x, y, actionType, color, lineWidth } = drawAction;
