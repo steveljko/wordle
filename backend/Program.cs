@@ -20,6 +20,7 @@ builder.Services.AddControllers();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<ILobbyService, LobbyService>();
 builder.Services.AddSingleton<IGameService, GameService>();
+builder.Services.AddSingleton<IWordService, WordService>();
 
 var app = builder.Build();
 

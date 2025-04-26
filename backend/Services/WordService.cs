@@ -14,7 +14,7 @@ public class WordService : IWordService
   private List<string> _availableWords = new List<string>();
 
   /// <summary>
-  /// Get random words from wordlist by count
+  /// Returns number of randomly selected words from word list.
   /// </summary>
   public List<string> GetRandomWords(int count)
   {

@@ -8,158 +8,140 @@ namespace backend.Services;
 
 public class GameService : IGameService
 {
-    private readonly ILobbyService _lobbyService;
-    private readonly IHubContext<GameHub> _hubContext;
-    private int CurrentPlayerIdx { get; set; } = 0;
-    private string WordToDraw { get; set; } = string.Empty;
-    private static readonly List<string> _wordList = new List<string>
+  private readonly ILobbyService _lobbyService;
+  private readonly IWordService _wordService;
+  private readonly IHubContext<GameHub> _hubContext;
+  private Player Drawer { get; set; } = null;
+  private string WordToDraw { get; set; } = string.Empty;
+
+  public GameService(ILobbyService lobbyService, IWordService wordService, IHubContext<GameHub> hubContext)
+  {
+    _lobbyService = lobbyService;
+    _wordService = wordService;
+    _hubContext = hubContext;
+  }
+
+  /// <summary>
+  /// Initializes game round by assigning the first player as drawer,
+  /// notifying participants of drawer's turn, and setting up the leaderboard.
+  /// </summary>
+  public async Task OnStart()
+  {
+    Drawer = _lobbyService.GetAllPlayersInLobby()[0]; // set first user to current drawer
+    await NotifyPlayerTurn(Drawer); // notifies next player and allow to choose a word.
+    await UpdateLeaderboard(); // initilize leaderboard
+  }
+
+  /// <summary>
+  /// Selects a word for the game, notifies all connected clients, 
+  /// and starts the game timer.
+  /// </summary>
+  public async Task SelectWord(string word)
+  {
+    WordToDraw = word;
+
+    await _hubContext.Clients.All.SendAsync("WordSelected");
+    await _hubContext.Clients.Client(ActivePlayer.Id).SendAsync("WordToDraw", new { Word = WordToDraw });
+
+    await StartGameTimer(60);
+  }
+
+  public async Task<bool> GuessWord(Player player, string word)
+  {
+    if (_lobbyService.GameIsStarted())
     {
-        "Apple", "House", "Tree", "Sun", "Cat", "Dog", "Flower", "Book", "Star", "Moon",
-        "Ball", "Hat", "Car", "Boat", "Fish", "Bird", "Cloud", "Chair", "Cup", "Candle",
-        "Heart", "Pencil", "Clock", "Carrot", "Umbrella", "Sock", "Butterfly", "Turtle", "Rainbow", "Cake",
-        "Leaf", "Spider", "Ghost", "Snowman", "Balloon", "Rocket", "Pizza", "Ice cream", "Crown", "Robot",
-        "Dragon", "Frog", "Penguin", "Guitar", "Elephant", "Octopus", "Cupcake", "Rainbow", "Snail", "Unicorn"
-    };
-    private List<string> _availableWords = new List<string>();
-    
-    public GameService(ILobbyService lobbyService, IHubContext<GameHub> hubContext)
-    {
-        _lobbyService = lobbyService;
-        _hubContext = hubContext;
+      if (WordToDraw.Equals(word, StringComparison.OrdinalIgnoreCase))
+      {
+        _lobbyService.AddPointsToPlayer(player.Id, 10);
+
+        await UpdateLeaderboard();
+
+        return true;
+      }
     }
 
-    public async Task OnStart()
+    return false;
+  }
+
+
+  public async Task<Player> NextTurn()
+  {
+    // reset word
+    WordToDraw = string.Empty;
+
+    var players = _lobbyService.GetAllPlayersInLobby();
+    if (players.Count > 0)
     {
-      await UpdateLeaderboard(); // initilize leaderboard
-      await NotifyNextPlayer(); // notifies next player and allow to choose a word.
+      var currPlayerIdx = _lobbyService.GetAllPlayersInLobby().IndexOf(Drawer);
+      var nextPlayerIdx = (currPlayerIdx + 1) % players.Count;
+
+      // change drawer to next player
+      Drawer = players[nextPlayerIdx];
+
+      // change user turn
+      await NotifyPlayerTurn(Drawer);
+
+      return ActivePlayer;
     }
 
-    /// <summary>
-    /// Determines if the word provided as a parameter is available in the list of words the user can choose.
-    /// </summary>
-    public bool IsWordAvailable(string word)
+    return null;
+  }
+
+  public async Task UpdateLeaderboard()
+  {
+    var leaderboard = _lobbyService.GetAllPlayersInLobby()
+      .OrderByDescending(p => p.Points)
+      .Select(p => new {
+        p.Username,
+        p.Points
+      })
+      .ToList();
+
+    await _hubContext.Clients.Groups("Lobby").SendAsync("UpdateLeaderboard", leaderboard);
+  }
+
+  /// <summary>
+  /// Determines if the player is the current drawer.
+  /// </summary>
+  public bool IsCurrentDrawer(Player player)
+  {
+    return player.Id == ActivePlayer.Id;
+  }
+
+  // <summary>
+  // Notify next user that is his turn and show them words for drawing.
+  // </summar>
+  private async Task NotifyPlayerTurn(Player player)
+  {
+    await _hubContext.Clients.Groups("Lobby").SendAsync("Broadcast", new BroadcastResponse
     {
-      return _availableWords.Contains(word);
-    }
+      Message = $"It's {player.Username} turn!",
+    });
 
+    var words = _wordService.GetRandomWords(3);
+    await _hubContext.Clients.Client(player.Id).SendAsync("YourTurn", new { Words = words });
+  }
 
-    /// <summary>
-    /// Selects a word for the game, notifies all connected clients, 
-    /// and starts the game timer.
-    /// </summary>
-    public async Task SelectWord(string word)
-    {
-      WordToDraw = word;
+  /// <summary>
+  /// Initiates a game timer for the specified countdown duration. 
+  /// After the countdown expires, it clears the game canvas and 
+  /// triggers the next turn for the players in the lobby.
+  /// </summary>
+  private async Task StartGameTimer(int countdown)
+  {
+    // starts timer and wait
+    var endTime = DateTime.UtcNow.AddSeconds(countdown);
 
-      await _hubContext.Clients.All.SendAsync("WordSelected");
-
-      var player = _lobbyService.GetAllPlayersInLobby()[CurrentPlayerIdx];
-      await _hubContext.Clients.Client(player.Id).SendAsync("WordToDraw", new { Word = WordToDraw });
-
-      await StartGameTimer(1000000);
-    }
-
-    public async Task<bool> GuessWord(Player player, string word)
-    {
-        if (_lobbyService.GameIsStarted())
-        {
-            if (WordToDraw.Equals(word, StringComparison.OrdinalIgnoreCase))
-            {
-                _lobbyService.AddPointsToPlayer(player.Id, 10);
-
-                await UpdateLeaderboard();
-                
-                return true;
-            }
-        }
-
-        return false;
-    }
-
- 
-    public async Task<Player> NextTurn()
-    {
-        // reset word
-        WordToDraw = string.Empty;
-        
-        var players = _lobbyService.GetAllPlayersInLobby();
-        if (players.Count > 0)
-        {
-            CurrentPlayerIdx = (CurrentPlayerIdx + 1) % players.Count;
-            
-            var nextDrawer = players[CurrentPlayerIdx];
-
-            await NotifyNextPlayer();
-            
-            return nextDrawer;
-        }
-        
-        return null;
-    }
-    
-    public async Task UpdateLeaderboard()
-    {
-        var leaderboard = _lobbyService.GetAllPlayersInLobby()
-            .OrderByDescending(p => p.Points)
-            .Select(p => new
-            {
-                p.Username,
-                p.Points
-            })
-            .ToList();
-    
-        await _hubContext.Clients.Groups("Lobby").SendAsync("UpdateLeaderboard", leaderboard);
-    }
-
-    /// <summary>
-    /// Determines if the player is the current drawer.
-    /// </summary>
-    public bool IsCurrentDrawer(Player player)
-    {
-        var currentlyDrawingPlayer = _lobbyService.GetAllPlayersInLobby()[CurrentPlayerIdx];
-        return player.Id == currentlyDrawingPlayer.Id;
-    }
-
-    // <summary>
-    // Notify next user that is his turn and show them words for drawing.
-    // </summar>
-    private async Task NotifyNextPlayer()
-    {
-        var player = _lobbyService.GetAllPlayersInLobby()[CurrentPlayerIdx];
-        Random random = new Random();
-        
-        await _hubContext.Clients.Groups("Lobby").SendAsync("Broadcast", new BroadcastResponse
-          {
-          Message = $"It's {player.Username} turn!",
-          });
-
-        _availableWords = _wordList.OrderBy(x => random.Next()).Take(3).ToList();
-        await _hubContext.Clients.Client(player.Id).SendAsync("YourTurn", new
-        {
-            Words = _availableWords
-        });
-    }
-
-    /// <summary>
-    /// Initiates a game timer for the specified countdown duration. 
-    /// After the countdown expires, it clears the game canvas and 
-    /// triggers the next turn for the players in the lobby.
-    /// </summary>
-    private async Task StartGameTimer(int countdown)
-    {
-      // starts timer and wait
-      var endTime = DateTime.UtcNow.AddSeconds(countdown);
-      
-      await _hubContext.Clients.Groups("Lobby").SendAsync("StartTimer", new { 
+    await _hubContext.Clients.Groups("Lobby").SendAsync("StartTimer", new { 
         EndTime = endTime.ToString("o"), // ISO 8601 time format
         Duration = countdown 
-      });
+        });
 
-      await Task.Delay(countdown * 1000); 
+    await Task.Delay(countdown * 1000); 
 
-      // clear canvas and switch to next user
-      await _hubContext.Clients.Groups("Lobby").SendAsync("ClearCanvas");
-      await _hubContext.Clients.Groups("Lobby").SendAsync("ResetTimer");
-      await NextTurn();
-    }
+    // clear canvas and switch to next user
+    await _hubContext.Clients.Groups("Lobby").SendAsync("ClearCanvas");
+    await _hubContext.Clients.Groups("Lobby").SendAsync("ResetTimer");
+    await NextTurn();
+  }
 }

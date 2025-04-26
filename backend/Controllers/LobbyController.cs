@@ -20,12 +20,18 @@ public class LobbyController : Controller
 {
     private readonly ILobbyService _lobbyService;
     private readonly IGameService _gameService;
+    private readonly IWordService _wordService;
     private readonly IHubContext<GameHub> _hubContext;
     
-    public LobbyController(ILobbyService lobbyService, IGameService gameService, IHubContext<GameHub> hubContext)
+    public LobbyController(
+        ILobbyService lobbyService,
+        IGameService gameService,
+        IWordService wordService,
+        IHubContext<GameHub> hubContext)
     {
         _lobbyService = lobbyService;
         _gameService = gameService;
+        _wordService = wordService;
         _hubContext = hubContext;
     }
     
@@ -110,8 +116,8 @@ public class LobbyController : Controller
         });
       }
 
-      // check if the word provided by the user is a valid word to choose.
-      if (!_gameService.IsWordAvailable(request.Word))
+      // check if the word provided by the user is valid word to choose.
+      if (!_wordService.IsWordAvailable(request.Word))
       {
         return BadRequest(new {
             Message = "The word you provided is not available for selection."
