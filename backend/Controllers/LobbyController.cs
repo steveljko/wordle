@@ -42,15 +42,15 @@ public class LobbyController : Controller
         {
             return BadRequest(new
             {
-                Code = "EmptyUsername",
-                Message = "You need to provide valid username to join lobby."
+              Code = "EmptyUsername",
+              Message = "You need to provide valid username to join lobby."
             });
         }
 
         Response.Cookies.Append("username", request.Username, new CookieOptions
         {
-            HttpOnly = false,
-            Expires = DateTimeOffset.UtcNow.AddDays(1)
+          HttpOnly = false,
+          Expires = DateTimeOffset.UtcNow.AddDays(1)
         });
 
         return Ok();
@@ -63,17 +63,17 @@ public class LobbyController : Controller
         {
             return BadRequest(new
             {
-                Code = "EmptyUsername",
-                Message = "You are not logged in!"
+              Code = "EmptyUsername",
+              Message = "You are not logged in!"
             });
         }
         
         Response.Cookies.Delete("username");
 
         await _hubContext.Clients.Groups("Lobby").SendAsync("UserLeft", new
-            {
-            Players = _lobbyService.GetAllPlayersInLobby()
-            });
+        {
+          Players = _lobbyService.GetAllPlayersInLobby()
+        });
         
         return Ok(new { Message = "You have successfully logged out." });
     }
@@ -85,8 +85,8 @@ public class LobbyController : Controller
         {
             return BadRequest(new
             {
-                Code = "NotEnoughPlayersInLobby",
-                Message = "There are not enough players in the lobby to start the game."
+              Code = "NotEnoughPlayersInLobby",
+              Message = "There are not enough players in the lobby to start the game."
             });
         }
 
@@ -120,7 +120,7 @@ public class LobbyController : Controller
       if (!_wordService.IsWordAvailable(request.Word))
       {
         return BadRequest(new {
-            Message = "The word you provided is not available for selection."
+          Message = "The word you provided is not available for selection."
         });
       }
 

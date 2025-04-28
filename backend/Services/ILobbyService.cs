@@ -8,6 +8,7 @@ public interface ILobbyService
     void RemovePlayer(string id);
     Player FindPlayerById(string id);
     List<Player> GetAllPlayersInLobby();
+    Player GetPlayerWithMostPoints();
     void StartGame();
     void StopGame();
     bool GameIsStarted();

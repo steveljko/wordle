@@ -41,16 +41,16 @@ public class GameHub : Hub
       var player = new Player
       {
         Id = Context.ConnectionId,
-           Username = username,
+         Username = username,
       };
 
       _lobbyService.AddPlayer(player);
 
       Clients.Group("Lobby").SendAsync("UserJoined", new
-          {
-          Player = player,
-          Players = _lobbyService.GetAllPlayersInLobby()
-          });
+      {
+        Player = player,
+        Players = _lobbyService.GetAllPlayersInLobby()
+      });
     }
 
     return base.OnConnectedAsync();
@@ -63,10 +63,10 @@ public class GameHub : Hub
     if (_gameService.IsCurrentDrawer(player))
     {
       await Clients.Caller.SendAsync("Broadcast", new BroadcastResponse
-          {
-          Success = false,
-          Message = "You can't guess the word while you're drawing!"
-          });
+      {
+        Success = false,
+        Message = "You can't guess the word while you're drawing!"
+      });
 
       return;
     }
@@ -75,10 +75,11 @@ public class GameHub : Hub
 
     if (ok)
     {
+      await Clients.Groups("Lobby").SendAsync("WordCorrectlyGuessed");
       await Clients.Groups("Lobby").SendAsync("Broadcast", new BroadcastResponse
-          {
-          Message = $"Player {player.Username} correctly guessed word '{word}' and earned 10 points.",
-          });
+      {
+        Message = $"Player {player.Username} correctly guessed word '{word}' and earned 10 points.",
+      });
 
       await Clients.Groups("Lobby").SendAsync("ClearCanvas");
 
@@ -87,10 +88,10 @@ public class GameHub : Hub
     else
     {
       await Clients.Groups("Lobby").SendAsync("Broadcast", new BroadcastResponse
-          {
-          Success = false,
-          Message = $"Player {player.Username} failed word guess."
-          });
+      {
+        Success = false,
+        Message = $"Player {player.Username} failed word guess."
+      });
     }
   }
 
@@ -108,23 +109,26 @@ public class GameHub : Hub
   public override async Task OnDisconnectedAsync(Exception exception)
   {
     var disconnectedPlayer = _lobbyService.FindPlayerById(Context.ConnectionId);
-    bool wasDrawer = _gameService.IsCurrentDrawer(disconnectedPlayer);
 
-    _lobbyService.RemovePlayer(Context.ConnectionId);
-    var remainingPlayers = _lobbyService.GetAllPlayersInLobby();
+    if (disconnectedPlayer != null) {
+      bool wasDrawer = _gameService.IsCurrentDrawer(disconnectedPlayer);
 
-    if (_lobbyService.GetAllPlayersInLobby().Count < 2)
-    {
-      _lobbyService.StopGame();
-      await Clients.All.SendAsync("GameDone");
-    } else if (wasDrawer && _lobbyService.GameIsStarted())
-    {
-      var nextDrawer = _gameService.NextTurn();
-    }
+      _lobbyService.RemovePlayer(Context.ConnectionId);
+      var remainingPlayers = _lobbyService.GetAllPlayersInLobby();
 
-    await Clients.All.SendAsync("UserLeft", new {
+      if (_lobbyService.GetAllPlayersInLobby().Count < 2)
+      {
+        _lobbyService.StopGame();
+        await Clients.All.SendAsync("GameDone");
+      } else if (wasDrawer && _lobbyService.GameIsStarted())
+      {
+        var nextDrawer = _gameService.NextTurn();
+      }
+
+      await Clients.All.SendAsync("UserLeft", new {
         Players = _lobbyService.GetAllPlayersInLobby()
-        });
+      });
+    }
 
     await base.OnDisconnectedAsync(exception);
   }

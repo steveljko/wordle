@@ -13,6 +13,7 @@ public class GameService : IGameService
   private readonly IHubContext<GameHub> _hubContext;
   private Player Drawer { get; set; } = null;
   private string WordToDraw { get; set; } = string.Empty;
+  private int Round { get; set; } = 0;
 
   public GameService(ILobbyService lobbyService, IWordService wordService, IHubContext<GameHub> hubContext)
   {
@@ -41,7 +42,7 @@ public class GameService : IGameService
     WordToDraw = word;
 
     await _hubContext.Clients.All.SendAsync("WordSelected");
-    await _hubContext.Clients.Client(ActivePlayer.Id).SendAsync("WordToDraw", new { Word = WordToDraw });
+    await _hubContext.Clients.Client(Drawer.Id).SendAsync("WordToDraw", new { Word = WordToDraw });
 
     await StartGameTimer(60);
   }
@@ -55,6 +56,8 @@ public class GameService : IGameService
         _lobbyService.AddPointsToPlayer(player.Id, 10);
 
         await UpdateLeaderboard();
+
+        Round = Round++;
 
         return true;
       }
@@ -81,7 +84,7 @@ public class GameService : IGameService
       // change user turn
       await NotifyPlayerTurn(Drawer);
 
-      return ActivePlayer;
+      return Drawer;
     }
 
     return null;
@@ -105,7 +108,11 @@ public class GameService : IGameService
   /// </summary>
   public bool IsCurrentDrawer(Player player)
   {
-    return player.Id == ActivePlayer.Id;
+    if (player != null && Drawer != null) {
+      return player.Id == Drawer.Id;
+    }
+
+    return false;
   }
 
   // <summary>
@@ -129,13 +136,25 @@ public class GameService : IGameService
   /// </summary>
   private async Task StartGameTimer(int countdown)
   {
+    if (Round == 5) {
+      Console.WriteLine("round is ", Round);
+
+      var winner = _lobbyService.GetPlayerWithMostPoints();
+
+      await _hubContext.Clients.Groups("Lobby").SendAsync("Winner", new { Winner = winner });
+
+      _lobbyService.StopGame();
+      
+      return;
+    }
+
     // starts timer and wait
     var endTime = DateTime.UtcNow.AddSeconds(countdown);
 
     await _hubContext.Clients.Groups("Lobby").SendAsync("StartTimer", new { 
-        EndTime = endTime.ToString("o"), // ISO 8601 time format
-        Duration = countdown 
-        });
+      EndTime = endTime.ToString("o"), // ISO 8601 time format
+      Duration = countdown 
+    });
 
     await Task.Delay(countdown * 1000); 
 

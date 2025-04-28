@@ -18,6 +18,7 @@ const GameEvents = {
   YourTurn: 'YourTurn',
   WordSelected: 'WordSelected',
   WordToDraw: 'WordToDraw',
+  WordCorrectlyGuessed: 'WordCorrectlyGuessed',
   StartTimer: 'StartTimer',
   ResetTimer: 'ResetTimer'
 }
@@ -30,7 +31,6 @@ const words = ref([]);
 const wordToDraw = ref('');
 
 hub.on(GameEvents.GameStarted, _ => scene.value = 'game');
-
 hub.on(GameEvents.UpdateLeaderboard, (data) => leaderboard.value = data);
 
 hub.on(GameEvents.YourTurn, ({ words: wordsToPick }) => {
@@ -46,6 +46,12 @@ hub.on(GameEvents.GameDone, () => {
 
 hub.on(GameEvents.WordSelected, _ => yourTurn.value = false);
 hub.on(GameEvents.WordToDraw, ({ word }) => wordToDraw.value = word);
+hub.on(GameEvents.WordCorrectlyGuessed, _ => {
+  isDrawer.value = false;
+  yourTurn.value = false;
+  words.value = '';
+  wordsToDraw.value = [];
+});
 
 // turn timer
 const timeLeft = ref(60);

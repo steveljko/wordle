@@ -35,6 +35,11 @@ public class LobbyService : ILobbyService
         return lobby.Players;
     }
 
+    public Player GetPlayerWithMostPoints()
+    {
+      return lobby.Players.OrderByDescending(p => p.Points).FirstOrDefault();
+    }
+
     public void StartGame()
     {
         lobby.HasGameInProgress = true;
